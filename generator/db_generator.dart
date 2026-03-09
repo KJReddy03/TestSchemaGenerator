@@ -107,6 +107,12 @@ class DbGenerator {
     final table = json['table'] as String;
     if (!json.containsKey('typeId')) {
       json['typeId'] = nextTypeId[0]++;
+    } else {
+      // if schema supplied its own typeId, make sure future ids don't clash
+      final provided = json['typeId'] as int;
+      if (provided >= nextTypeId[0]) {
+        nextTypeId[0] = provided + 1;
+      }
     }
     schemas[table] = json;
     _extractNestedSchemas(json, schemas, nextTypeId);
@@ -121,18 +127,32 @@ class DbGenerator {
   static void _scanFieldsForNested(Map<String, dynamic> fields,
       Map<String, Map<String, dynamic>> schemas, List<int> nextTypeId) {
     for (final field in fields.values) {
-      if (field is Map<String, dynamic> &&
-          field['type'] == 'object' &&
-          field.containsKey('fields')) {
-        final model = field['model'] as String;
-        final nestedFields = field['fields'] as Map<String, dynamic>;
-        final nestedSchema = {
-          'table': model,
-          'typeId': nextTypeId[0]++,
-          'fields': nestedFields,
-        };
-        schemas[model.toLowerCase()] = nestedSchema;
-        _scanFieldsForNested(nestedFields, schemas, nextTypeId);
+      if (field is Map<String, dynamic>) {
+        // handle inline object definitions
+        if (field['type'] == 'object' && field.containsKey('fields')) {
+          final model = field['model'] as String;
+          final nestedFields = field['fields'] as Map<String, dynamic>;
+          final nestedSchema = {
+            'table': model,
+            'typeId': nextTypeId[0]++,
+            'fields': nestedFields,
+          };
+          schemas[model.toLowerCase()] = nestedSchema;
+          _scanFieldsForNested(nestedFields, schemas, nextTypeId);
+        }
+
+        // handle lists with inline object definitions
+        else if (field['type'] == 'list' && field.containsKey('fields')) {
+          final model = field['model'] as String;
+          final nestedFields = field['fields'] as Map<String, dynamic>;
+          final nestedSchema = {
+            'table': model,
+            'typeId': nextTypeId[0]++,
+            'fields': nestedFields,
+          };
+          schemas[model.toLowerCase()] = nestedSchema;
+          _scanFieldsForNested(nestedFields, schemas, nextTypeId);
+        }
       }
     }
   }
@@ -196,13 +216,22 @@ class DbGenerator {
   static void _findNestedTables(Map<String, dynamic> fields,
       List<String> toProcess, Map<String, Map<String, dynamic>> allSchemas) {
     for (final field in fields.values) {
-      if (field is Map<String, dynamic> &&
-          field['type'] == 'object' &&
-          field.containsKey('fields')) {
-        final model = field['model'] as String;
-        final table = model.toLowerCase();
-        if (allSchemas.containsKey(table) && !toProcess.contains(table)) {
-          toProcess.add(table);
+      if (field is Map<String, dynamic>) {
+        // object fields
+        if (field['type'] == 'object' && field.containsKey('fields')) {
+          final model = field['model'] as String;
+          final table = model.toLowerCase();
+          if (allSchemas.containsKey(table) && !toProcess.contains(table)) {
+            toProcess.add(table);
+          }
+        }
+        // list fields with nested object definition
+        else if (field['type'] == 'list' && field.containsKey('fields')) {
+          final model = field['model'] as String;
+          final table = model.toLowerCase();
+          if (allSchemas.containsKey(table) && !toProcess.contains(table)) {
+            toProcess.add(table);
+          }
         }
       }
     }
@@ -507,9 +536,16 @@ ${writeFields.toString()}    ;
         final itemConversion = modelName != null
             ? ".map((e) => $modelName.fromJson(e as Map<String, dynamic>)).toList()"
             : "";
-        conversion = isNullable
-            ? "$jsonAccess != null ? ($jsonAccess as List)$itemConversion : null"
-            : "($jsonAccess as List)$itemConversion";
+        if (isNullable) {
+          conversion =
+              "$jsonAccess != null ? ($jsonAccess as List)$itemConversion : null";
+        } else {
+          // use null-aware operator when mapping to avoid calling map on null
+          final nullAwareItemConv =
+              itemConversion.isNotEmpty ? '?$itemConversion' : '';
+          conversion =
+              "($jsonAccess as List?)$nullAwareItemConv ?? <${modelName ?? 'dynamic'}>[]";
+        }
         break;
       default:
         conversion = isNullable

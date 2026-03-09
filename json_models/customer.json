@@ -6,14 +6,88 @@
     "name": { "type": "string", "required": true },
     "email": { "type": "string", "required": true },
     "age": { "type": "int", "required": true },
+
+    "contactInfo": {
+      "type": "object",
+      "model": "ContactInfo",
+      "fields": {
+        "phone": { "type": "string", "required": true },
+        "alternatePhone": { "type": "string", "nullable": true },
+
+        "address": {
+          "type": "object",
+          "model": "Address",
+          "fields": {
+            "street": { "type": "string", "required": true },
+            "city": { "type": "string", "required": true },
+            "state": { "type": "string", "required": true },
+            "postalCode": { "type": "string", "required": true },
+            "country": { "type": "string", "required": true },
+
+            "geoLocation": {
+              "type": "object",
+              "model": "GeoLocation",
+              "fields": {
+                "latitude": { "type": "double", "required": true },
+                "longitude": { "type": "double", "required": true }
+              }
+            }
+          }
+        }
+      }
+    },
+
     "marks": {
       "type": "object",
       "model": "Subjects",
       "fields": {
         "math": { "type": "int", "required": true },
         "physics": { "type": "int", "required": true },
-        "chemistry": { "type": "int", "required": true }
+        "chemistry": { "type": "int", "required": true },
+        "biology": { "type": "int", "nullable": true },
+
+        "gradeDetails": {
+          "type": "object",
+          "model": "GradeDetails",
+          "fields": {
+            "semester": { "type": "int", "required": true },
+            "grade": { "type": "string", "required": true },
+            "percentage": { "type": "double", "required": true }
+          }
+        }
       }
-    }
+    },
+
+    "enrollments": {
+      "type": "list",
+      "model": "CourseEnrollment",
+      "fields": {
+        "courseId": { "type": "string", "required": true },
+        "courseName": { "type": "string", "required": true },
+        "credits": { "type": "int", "required": true },
+
+        "instructor": {
+          "type": "object",
+          "model": "Instructor",
+          "fields": {
+            "id": { "type": "string", "required": true },
+            "name": { "type": "string", "required": true },
+
+            "department": {
+              "type": "object",
+              "model": "Department",
+              "fields": {
+                "departmentId": { "type": "string", "required": true },
+                "departmentName": { "type": "string", "required": true }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "createdAt": { "type": "datetime", "required": true },
+    "updatedAt": { "type": "datetime", "nullable": true },
+    "isActive": { "type": "bool", "default": true }
   }
 }
