@@ -1,0 +1,10 @@
+targets:
+  $default:
+    sources:
+      - lib/**
+      - generated/**
+      - test/**
+    builders:
+      hive_generator:
+        generate_for:
+          - generated/*.dart

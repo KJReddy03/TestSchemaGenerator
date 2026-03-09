@@ -1,0 +1,16 @@
+{
+  "table": "invoice",
+  "typeId": 18,
+  "fields": {
+    "id": { "type": "string", "nullable": true },
+    "orgId": { "type": "string", "required": true },
+    "facilityId": { "type": "string", "required": true },
+    "invoiceNumber": { "type": "string", "required": true },
+    "recordType": { "type": "int", "required": true },
+    "totalAmount": { "type": "double", "required": true },
+    "invoiceDate": { "type": "datetime", "required": true },
+    "deleted": { "type": "bool", "default": false },
+    "offline": { "type": "bool", "default": true },
+    "isSynced": { "type": "bool", "default": false }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "table": "customers",
+  "typeId": 1,
+  "fields": {
+    "id": { "type": "string", "nullable": true },
+    "name": { "type": "string", "required": true },
+    "email": { "type": "string", "required": true },
+    "age": { "type": "int", "required": true },
+    "marks": {
+      "type": "object",
+      "model": "Subjects",
+      "fields": {
+        "math": { "type": "int", "required": true },
+        "physics": { "type": "int", "required": true },
+        "chemistry": { "type": "int", "required": true }
+      }
+    }
+  }
+}
